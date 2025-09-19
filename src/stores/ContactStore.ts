@@ -3,10 +3,10 @@ import contactsReducer from "./slices/contactSlice";
 import { useDispatch } from "react-redux";
 
 export const makeStore = (preloadedState?: {
-	contacts: ReturnType<typeof contactsReducer>;
+	state: ReturnType<typeof contactsReducer>;
 }) =>
 	configureStore({
-		reducer: { contacts: contactsReducer },
+		reducer: { state: contactsReducer },
 		preloadedState,
 	});
 
