@@ -1,4 +1,5 @@
 type ContactType = "phone-number" | "email" | "address" | "telegram";
+
 type ContactList = {
 	contacts: Array<{
 		id: number;
