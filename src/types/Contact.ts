@@ -1,9 +1,11 @@
-type ContactType = {
-	name: string;
-	email: string;
-	birthDate: string;
-	phoneNumber: string;
-	address: string;
+type ContactType = "phone-number" | "email" | "address" | "telegram";
+type ContactList = {
+	contacts: Array<{
+		id: number;
+		type: ContactType;
+		value: string;
+		description: string;
+	}>;
 };
 
-export type { ContactType };
+export type { ContactType, ContactList };
