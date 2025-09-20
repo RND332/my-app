@@ -10,9 +10,16 @@ const contactsSlice = createSlice({
 		setContacts: (_, action: PayloadAction<ContactList>) => action.payload,
 		addContact: (
 			state,
-			action: PayloadAction<ContactList["contactList"][0]>,
+			action: PayloadAction<
+				Omit<ContactList["contactList"][0], "description"> & {
+					description?: string;
+				}
+			>,
 		) => {
-			state.contactList.push(action.payload);
+			state.contactList.push({
+				...action.payload,
+				description: action.payload.description ?? "",
+			});
 		},
 		removeContact: (state, action: PayloadAction<number>) => {
 			state.contactList = state.contactList.filter(
@@ -21,13 +28,20 @@ const contactsSlice = createSlice({
 		},
 		updateContact: (
 			state,
-			action: PayloadAction<ContactList["contactList"][0]>,
+			action: PayloadAction<
+				Omit<ContactList["contactList"][0], "description"> & {
+					description?: string;
+				}
+			>,
 		) => {
 			const index = state.contactList.findIndex(
 				(c) => c.id === action.payload.id,
 			);
 			if (index !== -1) {
-				state.contactList[index] = action.payload;
+				state.contactList[index] = {
+					...action.payload,
+					description: action.payload.description ?? "",
+				};
 			}
 		},
 	},

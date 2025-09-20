@@ -6,6 +6,7 @@ import {
 } from "@/stores/ContactStore";
 import {
 	addContact,
+	removeContact,
 	setContacts,
 	updateContact,
 } from "@/stores/slices/contactSlice";
@@ -38,6 +39,26 @@ export async function getServerSideProps() {
 
 export default function Home() {
 	const contacts = useSelector((s: RootState) => s.contactList);
+	const dispatch = useAppDispatch();
+	const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+	const groupedContacts = contacts.reduce(
+		(groups, contact) => {
+			const type = contact.type;
+			if (!groups[type]) {
+				groups[type] = [];
+			}
+			groups[type].push(contact);
+			return groups;
+		},
+		{} as Record<ContactType, typeof contacts>,
+	);
+
+	Object.keys(groupedContacts).forEach((type) => {
+		groupedContacts[type as ContactType].sort((a, b) =>
+			sortOrder === "desc" ? b.id - a.id : a.id - b.id,
+		);
+	});
 
 	return (
 		<Container className="container mt-4">
@@ -45,36 +66,51 @@ export default function Home() {
 				<Col>
 					<h1>Contacts</h1>
 				</Col>
-				<Col className="d-flex justify-content-end">
+				<Col className="d-flex justify-content-end gap-2">
+					<Button
+						variant="outline-secondary"
+						onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")}
+					>
+						Sort {sortOrder === "desc" ? "Ascending" : "Descending"}
+					</Button>
 					<EditContactModal />
 				</Col>
 			</Row>
-			<Row>
-				<Table striped bordered hover size="sm">
-					<thead>
-						<tr>
-							<th>ID</th>
-							<th>Type</th>
-							<th>Value</th>
-							<th>Description</th>
-							<th>Edit</th>
-						</tr>
-					</thead>
-					<tbody>
-						{contacts.map((c) => (
-							<tr key={c.id}>
-								<td>{c.id}</td>
-								<td>{c.type}</td>
-								<td>{c.value}</td>
-								<td>{c.description}</td>
-								<td>
-									<EditContactModal id={c.id} />
-								</td>
-							</tr>
-						))}
-					</tbody>
-				</Table>
-			</Row>
+			{Object.entries(groupedContacts).map(([type, typeContacts]) => (
+				<Row key={type} className="mb-4">
+					<Col>
+						<h3>{type}</h3>
+						<Table striped bordered hover size="sm">
+							<thead>
+								<tr>
+									<th>ID</th>
+									<th>Value</th>
+									<th>Description</th>
+									<th>Edit</th>
+								</tr>
+							</thead>
+							<tbody>
+								{typeContacts.map((c) => (
+									<tr key={c.id}>
+										<td>{c.id}</td>
+										<td>{c.value}</td>
+										<td>{c.description}</td>
+										<td className="d-flex gap-2">
+											<EditContactModal id={c.id} />
+											<Button
+												variant="danger"
+												onClick={() => dispatch(removeContact(c.id))}
+											>
+												Delete
+											</Button>
+										</td>
+									</tr>
+								))}
+							</tbody>
+						</Table>
+					</Col>
+				</Row>
+			))}
 		</Container>
 	);
 }
@@ -99,7 +135,7 @@ function EditContactModal({ id }: { id?: number }) {
 	function onSubmit(data: {
 		type: ContactType;
 		value: string;
-		description: string;
+		description?: string;
 	}) {
 		setShow(false);
 		if (!id) {
@@ -173,6 +209,7 @@ function EditContactModal({ id }: { id?: number }) {
 				</Modal.Body>
 			</Modal>
 			<Button
+				className="px-3"
 				variant={id ? "secondary" : "primary"}
 				onClick={() => setShow(true)}
 			>
