@@ -1,13 +1,26 @@
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import {
 	makeStore,
 	useAppDispatch,
 	type RootState,
 } from "@/stores/ContactStore";
-import { setContacts } from "@/stores/slices/contactSlice";
-import type { ContactList } from "@/types/Contact";
-import { Button, Col, Container, Modal, Row, Table } from "react-bootstrap";
+import {
+	addContact,
+	setContacts,
+	updateContact,
+} from "@/stores/slices/contactSlice";
+import { ContactType, type ContactList } from "@/types/Contact";
+import {
+	Button,
+	Col,
+	Container,
+	Form,
+	Modal,
+	Row,
+	Table,
+} from "react-bootstrap";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 
 export async function getServerSideProps() {
 	const res = await fetch("http://localhost:3000/api/contacts");
@@ -24,8 +37,7 @@ export async function getServerSideProps() {
 }
 
 export default function Home() {
-	const contacts = useSelector((s: RootState) => s.state.contacts);
-	const [showModal, setShowModal] = useState(false);
+	const contacts = useSelector((s: RootState) => s.contactList);
 
 	return (
 		<Container className="container mt-4">
@@ -34,9 +46,7 @@ export default function Home() {
 					<h1>Contacts</h1>
 				</Col>
 				<Col className="d-flex justify-content-end">
-					<Button variant="primary" onClick={() => setShowModal(true)}>
-						Add Contact
-					</Button>
+					<EditContactModal />
 				</Col>
 			</Row>
 			<Row>
@@ -71,7 +81,34 @@ export default function Home() {
 
 function EditContactModal({ id }: { id?: number }) {
 	const [show, setShow] = useState(false);
+	const currentValue = useSelector((s: RootState) =>
+		id ? s.contactList.find((c) => c.id === id) : null,
+	);
+	const lastId = useSelector((s: RootState) =>
+		s.contactList.reduce((max, c) => (c.id > max ? c.id : max), 0),
+	);
+	const newId = lastId + 1;
+
 	const dispatch = useAppDispatch();
+	const {
+		register,
+		handleSubmit,
+		formState: { errors },
+	} = useForm<Omit<ContactList["contactList"][number], "id">>();
+
+	function onSubmit(data: {
+		type: ContactType;
+		value: string;
+		description: string;
+	}) {
+		setShow(false);
+		if (!id) {
+			dispatch(addContact({ id: newId, ...data }));
+			return;
+		}
+
+		dispatch(updateContact({ id, ...data }));
+	}
 
 	return (
 		<>
@@ -79,9 +116,66 @@ function EditContactModal({ id }: { id?: number }) {
 				<Modal.Header closeButton>
 					<Modal.Title>{id ? "Edit Contact" : "Add Contact"}</Modal.Title>
 				</Modal.Header>
-				<Modal.Body></Modal.Body>
+				<Modal.Body>
+					<Form onSubmit={handleSubmit(onSubmit)}>
+						<Form.Group className="mb-3">
+							<Form.Label>Type *</Form.Label>
+							<Form.Select
+								{...register("type", { required: "Type is required" })}
+								isInvalid={!!errors.type}
+								defaultValue={currentValue?.type || ""}
+							>
+								<option value={ContactType.Email}>Email</option>
+								<option value={ContactType.PhoneNumber}>Phone</option>
+								<option value={ContactType.Address}>Address</option>
+								<option value={ContactType.Telegram}>Telegram</option>
+							</Form.Select>
+							<Form.Control.Feedback type="invalid">
+								{errors.type?.message}
+							</Form.Control.Feedback>
+						</Form.Group>
+
+						<Form.Group className="mb-3">
+							<Form.Label>Contact *</Form.Label>
+							<Form.Control
+								type="text"
+								{...register("value", { required: "Contact is required" })}
+								isInvalid={!!errors.value}
+								defaultValue={currentValue?.value || ""}
+							/>
+							<Form.Control.Feedback type="invalid">
+								{errors.value?.message}
+							</Form.Control.Feedback>
+						</Form.Group>
+
+						<Form.Group className="mb-3">
+							<Form.Label>Description</Form.Label>
+							<Form.Control
+								as="textarea"
+								rows={3}
+								{...register("description")}
+								defaultValue={currentValue?.description || ""}
+							/>
+							<Form.Text className="text-muted">
+								Optional description for this contact
+							</Form.Text>
+						</Form.Group>
+
+						<div className="d-flex justify-content-end gap-2">
+							<Button variant="secondary" onClick={() => setShow(false)}>
+								Cancel
+							</Button>
+							<Button variant="primary" type="submit">
+								{id ? "Update" : "Create"}
+							</Button>
+						</div>
+					</Form>
+				</Modal.Body>
 			</Modal>
-			<Button variant="secondary" onClick={() => setShow(true)}>
+			<Button
+				variant={id ? "secondary" : "primary"}
+				onClick={() => setShow(true)}
+			>
 				{id ? "Edit" : "Add"}
 			</Button>
 		</>

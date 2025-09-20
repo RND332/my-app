@@ -2,11 +2,11 @@ import { configureStore } from "@reduxjs/toolkit";
 import contactsReducer from "./slices/contactSlice";
 import { useDispatch } from "react-redux";
 
-export const makeStore = (preloadedState?: {
-	state: ReturnType<typeof contactsReducer>;
-}) =>
+export const makeStore = (
+	preloadedState?: ReturnType<typeof contactsReducer>,
+) =>
 	configureStore({
-		reducer: { state: contactsReducer },
+		reducer: contactsReducer,
 		preloadedState,
 	});
 

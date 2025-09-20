@@ -1,7 +1,12 @@
-type ContactType = "phone-number" | "email" | "address" | "telegram";
+enum ContactType {
+	PhoneNumber = "phone-number",
+	Email = "email",
+	Address = "address",
+	Telegram = "telegram",
+}
 
 type ContactList = {
-	contacts: Array<{
+	contactList: Array<{
 		id: number;
 		type: ContactType;
 		value: string;
@@ -9,4 +14,4 @@ type ContactList = {
 	}>;
 };
 
-export type { ContactType, ContactList };
+export { ContactType, type ContactList };
