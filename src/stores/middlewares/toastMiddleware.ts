@@ -12,25 +12,15 @@ export const toastMiddleware = createListenerMiddleware();
 toastMiddleware.startListening({
 	matcher: isAnyOf(setContacts, addContact, removeContact, updateContact),
 	effect: async (action, listenerApi) => {
-		if (setContacts.match(action)) {
-			listenerApi.dispatch(
-				addToast({ text: "Contacts list loaded", variant: "primary" }),
-			);
-		}
-		if (addContact.match(action)) {
-			listenerApi.dispatch(
-				addToast({ text: "Contact added", variant: "success" }),
-			);
-		}
-		if (removeContact.match(action)) {
-			listenerApi.dispatch(
-				addToast({ text: "Contact removed", variant: "danger" }),
-			);
-		}
-		if (updateContact.match(action)) {
-			listenerApi.dispatch(
-				addToast({ text: "Contact updated", variant: "info" }),
-			);
+		const messages = {
+			[addContact.type]: { text: "Contact added", variant: "success" },
+			[removeContact.type]: { text: "Contact removed", variant: "danger" },
+			[updateContact.type]: { text: "Contact updated", variant: "info" },
+		};
+
+		const message = messages[action.type as keyof typeof messages];
+		if (message) {
+			listenerApi.dispatch(addToast(message));
 		}
 	},
 });

@@ -15,8 +15,6 @@ import {
 	Modal,
 	Row,
 	Table,
-	Toast,
-	ToastContainer,
 } from "react-bootstrap";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -40,8 +38,6 @@ export default function Home() {
 	const dispatch = useAppDispatch();
 
 	const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-	const [showToast, setShowToast] = useState(false);
-	const [toastMessage, setToastMessage] = useState("");
 
 	const groupedContacts = contacts.reduce(
 		(groups, contact) => {
@@ -61,81 +57,58 @@ export default function Home() {
 		);
 	});
 
-	const handleDelete = (id: number) => {
-		dispatch(removeContact(id));
-		setShowToast(true);
-	};
-
 	return (
-		<>
-			<Container className="container mt-4">
-				<Row>
+		<Container className="container mt-4">
+			<Row>
+				<Col>
+					<h1>Contacts</h1>
+				</Col>
+				<Col className="d-flex justify-content-end gap-2">
+					<Button
+						variant="outline-secondary"
+						onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")}
+					>
+						Sort {sortOrder === "desc" ? "Ascending" : "Descending"}
+					</Button>
+					<EditContactModal />
+				</Col>
+			</Row>
+			{Object.entries(groupedContacts).map(([type, typeContacts]) => (
+				<Row key={type} className="mb-4">
 					<Col>
-						<h1>Contacts</h1>
-					</Col>
-					<Col className="d-flex justify-content-end gap-2">
-						<Button
-							variant="outline-secondary"
-							onClick={() =>
-								setSortOrder(sortOrder === "desc" ? "asc" : "desc")
-							}
-						>
-							Sort {sortOrder === "desc" ? "Ascending" : "Descending"}
-						</Button>
-						<EditContactModal />
+						<h3>{type}</h3>
+						<Table striped bordered hover size="sm">
+							<thead>
+								<tr>
+									<th>ID</th>
+									<th>Value</th>
+									<th>Description</th>
+									<th>Edit</th>
+								</tr>
+							</thead>
+							<tbody>
+								{typeContacts.map((c) => (
+									<tr key={c.id}>
+										<td>{c.id}</td>
+										<td>{c.value}</td>
+										<td>{c.description}</td>
+										<td className="d-flex gap-2">
+											<EditContactModal id={c.id} />
+											<Button
+												variant="danger"
+												onClick={() => dispatch(removeContact(c.id))}
+											>
+												Delete
+											</Button>
+										</td>
+									</tr>
+								))}
+							</tbody>
+						</Table>
 					</Col>
 				</Row>
-				{Object.entries(groupedContacts).map(([type, typeContacts]) => (
-					<Row key={type} className="mb-4">
-						<Col>
-							<h3>{type}</h3>
-							<Table striped bordered hover size="sm">
-								<thead>
-									<tr>
-										<th>ID</th>
-										<th>Value</th>
-										<th>Description</th>
-										<th>Edit</th>
-									</tr>
-								</thead>
-								<tbody>
-									{typeContacts.map((c) => (
-										<tr key={c.id}>
-											<td>{c.id}</td>
-											<td>{c.value}</td>
-											<td>{c.description}</td>
-											<td className="d-flex gap-2">
-												<EditContactModal id={c.id} />
-												<Button
-													variant="danger"
-													onClick={() => handleDelete(c.id)}
-												>
-													Delete
-												</Button>
-											</td>
-										</tr>
-									))}
-								</tbody>
-							</Table>
-						</Col>
-					</Row>
-				))}
-			</Container>
-
-			<ToastContainer position="bottom-end">
-				<Toast
-					onClose={() => setShowToast(false)}
-					show={showToast}
-					delay={3000}
-					autohide
-				>
-					<Toast.Header>
-						<strong className="me-auto">Contact Manager</strong>
-					</Toast.Header>
-					<Toast.Body>Contact updated successfully!</Toast.Body>
-				</Toast>
-			</ToastContainer>
-		</>
+			))}
+		</Container>
 	);
 }
 
