@@ -1,9 +1,5 @@
 import { useSelector } from "react-redux";
-import {
-	makeStore,
-	useAppDispatch,
-	type RootState,
-} from "@/stores/ContactStore";
+import { makeStore, useAppDispatch, type RootState } from "@/stores/store";
 import {
 	addContact,
 	removeContact,
@@ -19,6 +15,8 @@ import {
 	Modal,
 	Row,
 	Table,
+	Toast,
+	ToastContainer,
 } from "react-bootstrap";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -38,9 +36,12 @@ export async function getServerSideProps() {
 }
 
 export default function Home() {
-	const contacts = useSelector((s: RootState) => s.contactList);
+	const contacts = useSelector((s: RootState) => s.contacts.contactList);
 	const dispatch = useAppDispatch();
+
 	const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+	const [showToast, setShowToast] = useState(false);
+	const [toastMessage, setToastMessage] = useState("");
 
 	const groupedContacts = contacts.reduce(
 		(groups, contact) => {
@@ -60,72 +61,96 @@ export default function Home() {
 		);
 	});
 
+	const handleDelete = (id: number) => {
+		dispatch(removeContact(id));
+		setShowToast(true);
+	};
+
 	return (
-		<Container className="container mt-4">
-			<Row>
-				<Col>
-					<h1>Contacts</h1>
-				</Col>
-				<Col className="d-flex justify-content-end gap-2">
-					<Button
-						variant="outline-secondary"
-						onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")}
-					>
-						Sort {sortOrder === "desc" ? "Ascending" : "Descending"}
-					</Button>
-					<EditContactModal />
-				</Col>
-			</Row>
-			{Object.entries(groupedContacts).map(([type, typeContacts]) => (
-				<Row key={type} className="mb-4">
+		<>
+			<Container className="container mt-4">
+				<Row>
 					<Col>
-						<h3>{type}</h3>
-						<Table striped bordered hover size="sm">
-							<thead>
-								<tr>
-									<th>ID</th>
-									<th>Value</th>
-									<th>Description</th>
-									<th>Edit</th>
-								</tr>
-							</thead>
-							<tbody>
-								{typeContacts.map((c) => (
-									<tr key={c.id}>
-										<td>{c.id}</td>
-										<td>{c.value}</td>
-										<td>{c.description}</td>
-										<td className="d-flex gap-2">
-											<EditContactModal id={c.id} />
-											<Button
-												variant="danger"
-												onClick={() => dispatch(removeContact(c.id))}
-											>
-												Delete
-											</Button>
-										</td>
-									</tr>
-								))}
-							</tbody>
-						</Table>
+						<h1>Contacts</h1>
+					</Col>
+					<Col className="d-flex justify-content-end gap-2">
+						<Button
+							variant="outline-secondary"
+							onClick={() =>
+								setSortOrder(sortOrder === "desc" ? "asc" : "desc")
+							}
+						>
+							Sort {sortOrder === "desc" ? "Ascending" : "Descending"}
+						</Button>
+						<EditContactModal />
 					</Col>
 				</Row>
-			))}
-		</Container>
+				{Object.entries(groupedContacts).map(([type, typeContacts]) => (
+					<Row key={type} className="mb-4">
+						<Col>
+							<h3>{type}</h3>
+							<Table striped bordered hover size="sm">
+								<thead>
+									<tr>
+										<th>ID</th>
+										<th>Value</th>
+										<th>Description</th>
+										<th>Edit</th>
+									</tr>
+								</thead>
+								<tbody>
+									{typeContacts.map((c) => (
+										<tr key={c.id}>
+											<td>{c.id}</td>
+											<td>{c.value}</td>
+											<td>{c.description}</td>
+											<td className="d-flex gap-2">
+												<EditContactModal id={c.id} />
+												<Button
+													variant="danger"
+													onClick={() => handleDelete(c.id)}
+												>
+													Delete
+												</Button>
+											</td>
+										</tr>
+									))}
+								</tbody>
+							</Table>
+						</Col>
+					</Row>
+				))}
+			</Container>
+
+			<ToastContainer position="bottom-end">
+				<Toast
+					onClose={() => setShowToast(false)}
+					show={showToast}
+					delay={3000}
+					autohide
+				>
+					<Toast.Header>
+						<strong className="me-auto">Contact Manager</strong>
+					</Toast.Header>
+					<Toast.Body>Contact updated successfully!</Toast.Body>
+				</Toast>
+			</ToastContainer>
+		</>
 	);
 }
 
 function EditContactModal({ id }: { id?: number }) {
 	const [show, setShow] = useState(false);
 	const currentValue = useSelector((s: RootState) =>
-		id ? s.contactList.find((c) => c.id === id) : null,
+		id ? s.contacts.contactList.find((c) => c.id === id) : null,
 	);
-	const lastId = useSelector((s: RootState) =>
-		s.contactList.reduce((max, c) => (c.id > max ? c.id : max), 0),
-	);
-	const newId = lastId + 1;
+	const newId =
+		useSelector((s: RootState) =>
+			s.contacts.contactList.reduce((max, c) => (c.id > max ? c.id : max), 0),
+		) + 1;
 
 	const dispatch = useAppDispatch();
+
 	const {
 		register,
 		handleSubmit,
@@ -137,13 +162,15 @@ function EditContactModal({ id }: { id?: number }) {
 		value: string;
 		description?: string;
 	}) {
-		setShow(false);
 		if (!id) {
 			dispatch(addContact({ id: newId, ...data }));
-			return;
+		} else {
+			dispatch(updateContact({ id, ...data }));
 		}
 
-		dispatch(updateContact({ id, ...data }));
+		setTimeout(() => {
+			setShow(false);
+		}, 3000);
 	}
 
 	return (
